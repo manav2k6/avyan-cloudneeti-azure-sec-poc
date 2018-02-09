@@ -1,0 +1,40 @@
+<%@ Master Language="C#" AutoEventWireup="true" CodeFile="MasterPage.master.cs" Inherits="MasterPage" %>
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml" >
+<head runat="server">
+    <title>Browse A Book--The Ultimate Library</title>
+</head>
+<body>
+    <form id="form1" runat="server">
+    <div>
+        <h2>Browse A Book--The Ultimate Library<br /></h2>
+        <asp:Menu ID="Menu1" runat="server" BackColor="#E3EAEB" DynamicHorizontalOffset="2"
+            Font-Names="Verdana" Font-Size="0.8em" ForeColor="#666666" Orientation="Horizontal"
+            StaticSubMenuIndent="10px">
+            <StaticMenuItemStyle HorizontalPadding="5px" VerticalPadding="2px" />
+            <DynamicHoverStyle BackColor="#666666" ForeColor="White" />
+            <DynamicMenuStyle BackColor="#E3EAEB" />
+            <StaticSelectedStyle BackColor="#1C5E55" />
+            <DynamicSelectedStyle BackColor="#1C5E55" />
+            <DynamicMenuItemStyle HorizontalPadding="5px" VerticalPadding="2px" />
+            <Items>
+                <asp:MenuItem NavigateUrl="~/Default.aspx" Text="Home" Value="Home"></asp:MenuItem>
+                <asp:MenuItem NavigateUrl="~/Authors.aspx" Text="View Authors" Value="View Authors">
+                </asp:MenuItem>
+                <asp:MenuItem NavigateUrl="~/Titles.aspx" Text="View Titles" Value="View Titles"></asp:MenuItem>
+                <asp:MenuItem NavigateUrl="~/AddAuthor.aspx" Text="Add Author" Value="View Publishers">
+                </asp:MenuItem>
+                <asp:MenuItem NavigateUrl="~/AddTitle.aspx" Text="Add Title" Value="New Item">
+                </asp:MenuItem>
+            </Items>
+            <StaticHoverStyle BackColor="#666666" ForeColor="White" />
+        </asp:Menu>
+        <br />
+        <asp:contentplaceholder id="ContentPlaceHolder1" runat="server">
+        </asp:contentplaceholder>
+    </div>
+    </form>
+</body>
+</html>
