@@ -1,4 +1,4 @@
-Deployment of a Azure Windows VM with boot diagnostics
+# Deployment of a Azure Windows VM with boot diagnostics
 
 
 -This template allows you to deploy a Windows VM using a few different options for the Windows version, using the latest patched version.
