@@ -1,0 +1,36 @@
+﻿{
+    "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentParameters.json#",
+    "contentVersion": "1.0.0.0",
+  "parameters":
+  {
+    "administratorLogin":
+    {
+      "value": "testuser"
+    },
+    "databaseName":
+    {
+      "value": "samincpaas"
+    },
+    "location":
+    {
+      "value": "centralus"
+    },
+      "deployPackageFolder": {
+          "value": "Resources"
+      },
+      "deployPackageFileName": {
+          "value": "samincpaas.bacpac"
+      },
+      "projectName": {
+          "value": "DeployDataApplication"
+      },
+	  "diagStorageAccount":{
+			"value": "binarmtesting"
+	  },
+    "workspaceName":{
+			"value":"binarmlog-analytics-dev"
+	}
+
+	
+  }
+}
