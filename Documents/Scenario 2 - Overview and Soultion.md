@@ -1,0 +1,1 @@
+ - Resource Group with Application Gateways in front of a WebApp and an Azure SQL connected to WebAPP as a backend. 
