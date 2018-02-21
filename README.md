@@ -13,7 +13,7 @@ As a POC we have taken 4 scenarios build with a combination of Azure IaaS and Pa
 # TABLE OF CONTENTS 
 <!-- TOC -->
 - <a href="Scenario-1 Overview and Solution.md"> Scenario-1 Overview and Solution </a> 
-- <a href="Scenario-2 Overview and Solution.md"> Scenario-2 Overview and Solution </a> 
+- <a href="Scenario-2 Overview and Soultion.md"> Scenario-2 Overview and Solution </a> 
 - <a href="Scenario-3overview.md.md"> Scenario-3 Overview and Solution</a> 
 - <a href="Scenario-4overview.md.md"> Scenario-4 Overview and Solution</a> 
 - <a href="FAQ.md"> Frequently Asked Questions and troubleshooting</a> 
