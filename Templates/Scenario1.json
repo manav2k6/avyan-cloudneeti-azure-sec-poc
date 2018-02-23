@@ -260,8 +260,7 @@
   {
     "type": "providers/diagnosticSettings",
     "name": "DDOSMonitoring",
-	  "enabled": true,
-    "dependsOn": [
+	 "dependsOn": [
       "[resourceId('Microsoft.Network/publicIPAddresses', variables('publicIpAddressName'))]"
     ],
     "apiVersion": "2017-05-01-preview",
