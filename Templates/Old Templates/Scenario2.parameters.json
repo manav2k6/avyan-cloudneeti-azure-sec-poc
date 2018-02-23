@@ -1,0 +1,67 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentParameters.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "vnetName": {
+      "type": "string",
+       "Description": "Virtual network name"
+    },
+    "webAppName": {
+      "Description": "name of the web application",
+      "type": "string",
+      },
+    "appServicePlanSKU": {
+      "type": "string",
+      "value": "Free",
+      "Description": "App service plan tier. Allowed values are 'Free', 'Basic', 'Standard', 'Premium'"
+    },
+    "appServicePlanSize": {
+      "value": "F1",
+      "Description": "App service plan tier. Allowed values are 'F1' for free; 'S1', 'S2', 'S3' for standard; 'B1','B2','B3' for Basic; 'P1','P2','P3' for Premium"
+    },
+    "packageURI": {
+      "type": "string",
+      "value": "https://github.com/manav2k6/demowebapp.git",
+      "Description": "git repo url"
+    },
+    "ConnectionStr": {
+      "type": "string",
+      "value": "Server=tcp:server-sql112233.database.windows.net,1433;Initial Catalog=iisweb2;Persist Security Info=False;User ID= ServerAdmin;Password= ChangeYourAdminPassword1;MultipleActiveResultSets=False;Encrypt=True;TrustServerCertificate=False;Connection Timeout=30;",
+      "Description": "Backend DB connection String"
+    },
+    "applicationGatewaySize": {
+      "type": "string",
+      "value": "WAF_Medium",
+      "Description": "application gateway size"
+    },
+    "capacity": {
+      "type": "int",
+      "value": 2,
+      "Description": "Number of instances. Allowed values 1, 2, 3, 4, 5, 6, 7, 8, 9, 10"
+    },
+    "logAnalyticsServiceName": {
+      "type": "string",
+      "value": "MyAppG"
+    },
+    "environment": {
+      "type": "string",
+      "value": "Myenv"
+    },
+    "omsLocation": {
+      "type": "string",
+      "value": "Southeast Asia"
+    },
+    "omsdataRetention": {
+      "type": "int",
+      "value": 90
+    },
+    "workspaceSKU": {
+      "type": "string",
+      "value": "Free"
+    },
+    "diagStorageAccount": {
+      "type": "string",
+      "value": "armdiagstor15621"
+    }
+  }
+}

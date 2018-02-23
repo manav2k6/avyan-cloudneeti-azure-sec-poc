@@ -1,0 +1,643 @@
+{
+  "$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "vnetName": {
+      "type": "string",
+      "metadata": {
+        "description": "Virtual Network name"
+      }
+    },
+    "webAppName": {
+      "type": "string",
+      "metadata": {
+        "description": "Web application Name"
+      }
+    },
+    "packageURI": {
+      "type": "string",
+      "metadata": {
+        "description": "package url name"
+      }
+    },
+    "applicationGatewaySize": {
+      "type": "string",
+      "allowedValues": [
+        "Standard_Small",
+        "Standard_Medium",
+        "Standard_Large",
+		  "WAF_Medium"
+      ],
+      "defaultValue": "WAF_Medium",
+      "metadata": {
+        "description": "application gateway size"
+      }
+    },
+    "capacity": {
+      "type": "int",
+      "allowedValues": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10
+      ],
+      "defaultValue": 2,
+      "metadata": {
+        "description": "Number of instances"
+      }
+    },
+    "appServicePlanSKU": {
+      "type": "string",
+      "defaultValue": "Free",
+      "allowedValues": [
+        "Free",
+        "Basic",
+        "Standard",
+        "Premium"
+      ],
+      "metadata": {
+        "description": "Web application tier"
+      }
+    },
+    "appServicePlanSize": {
+      "type": "string",
+      "defaultValue": "F1",
+      "allowedValues": [
+        "S1",
+        "S2",
+        "S3",
+        "P1",
+        "P2",
+        "P3",
+        "F1",
+        "B2",
+        "B3",
+        "B1"
+      ],
+      "metadata": {
+        "description": "SKU"
+      }
+    },
+    "logAnalyticsServiceName": {
+      "type": "string"
+    },
+    "environment": {
+      "defaultValue": "dev",
+      "type": "string"
+    },
+    "omsLocation": {
+      "type": "string",
+      "allowedValues": [
+        "East US",
+        "West Europe",
+        "Southeast Asia",
+        "Australia Southeast"
+      ],
+      "defaultValue": "East US"
+    },
+    "omsdataRetention": {
+      "type": "int",
+      "defaultValue": 90,
+      "minValue": 7,
+      "maxValue": 730,
+      "metadata": {
+        "description": "Number of days of retention. Free plans can only have 7 days, Standalone and OMS plans include 30 days for free"
+      }
+    },
+    "workspaceSKU": {
+      "type": "string",
+      "allowedValues": [
+        "Free",
+        "Standalone",
+        "PerNode"
+      ],
+      "defaultValue": "Free",
+      "metadata": {
+        "description": "Service Tier: Free, Standalone, or PerNode"
+      }
+    },
+    "diagStorageAccount": {
+      "type": "string",
+      "metadata": {
+        "description": "name of storage account in which we will store resource diagnostics"
+      }
+    },
+  "administratorLogin":
+    {
+      "type": "string"
+    },
+    "administratorLoginPassword":
+    {
+      "type": "securestring"
+    },
+    "databaseName":
+    {
+      "type": "string"
+    },
+    "_artifactsLocation":
+    {
+      "type": "string"
+    },
+    "_artifactsLocationSasToken":
+    {
+      "type": "string"
+    },
+    "deployPackageFileName":
+    {
+      "type": "string"
+    }
+  },
+  "variables": {
+    "pip": "[concat(parameters('webAppName'), '-appGatewayIP')]",
+    "vnetID": "[resourceId('Microsoft.Network/virtualNetworks',parameters('VnetName'))]",
+    "subnetRef": "[concat(variables('vnetID'),'/subnets/','subnet01')]",
+    "publicIPRef": "[resourceId('Microsoft.Network/publicIPAddresses',variables('pip'))]",
+    "wan": "[concat(parameters('webAppName'),'-Gateway')]",
+    "applicationGatewayID": "[resourceId('Microsoft.Network/applicationGateways',variables('wan'))]",
+    "workspaceName": "[toLower(concat(parameters('logAnalyticsServiceName'),'-analytics-',parameters('environment')))]",
+    "solutionNames": [
+      "AzureWebAppsAnalytics",
+      "AzureSQLAnalytics",
+      "Security"
+    ],
+	 "collation": "SQL_Latin1_General_CP1_CI_AS",
+    "edition": "Premium",
+    "maxSizeBytes": "1073741824",
+    "requestedServiceObjectiveName": "P1",
+    "storageKeyType": "SharedAccessKey",
+    "version": "12.0",
+    "serverName": "[concat('scenarios2', uniqueString(resourceGroup().id))]"
+  },
+  "resources": [
+    {
+      "type": "Microsoft.Storage/storageAccounts",
+      "name": "[parameters('diagStorageAccount')]",
+      "apiVersion": "2017-06-01",
+      "location": "[resourceGroup().location]",
+      "sku": {
+        "name": "Standard_LRS"
+      }
+    },
+    {
+      "apiVersion": "2017-03-03-preview",
+      "name": "[variables('workspaceName')]",
+      "type": "Microsoft.OperationalInsights/workspaces",
+      "location": "[parameters('omsLocation')]",
+      "properties": {
+        "sku": {
+          "name": "[parameters('workspaceSKU')]"
+        },
+        "retention": "[parameters('omsdataRetention')]"
+      }
+    },
+    {
+      "id": "[concat(resourceGroup().id, '/providers/Microsoft.OperationsManagement/solutions/', variables('solutionNames')[copyIndex()], '(', variables('workspaceName'), ')')]",
+      "type": "Microsoft.OperationsManagement/solutions",
+      "name": "[concat(variables('solutionNames')[copyIndex()], '(', variables('workspaceName'), ')')]",
+      "apiVersion": "2015-11-01-preview",
+      "location": "[parameters('omsLocation')]",
+      "dependsOn": [
+        "[variables('workspaceName')]"
+      ],
+      "copy": {
+        "name": "copy-oms-solutions",
+        "count": "[length(variables('solutionNames'))]"
+      },
+      "plan": {
+        "name": "[concat(variables('solutionNames')[copyIndex()], '(', variables('workspaceName'), ')')]",
+        "product": "[concat('OMSGallery/', variables('solutionNames')[copyIndex()])]",
+        "promotionCode": "",
+        "publisher": "Microsoft"
+      },
+      "properties": {
+        "workspaceResourceId": "[concat(resourceGroup().id, '/providers/Microsoft.OperationalInsights/workspaces/', variables('workspaceName'))]"
+      }
+    },
+    {
+      "apiVersion": "2017-10-01",
+      "type": "Microsoft.Network/virtualNetworks",
+      "name": "[parameters('vnetName')]",
+      "location": "[resourceGroup().location]",
+      "properties": {
+        "addressSpace": {
+          "addressPrefixes": [
+            "10.0.0.0/24"
+          ]
+        },
+        "subnets": [
+          {
+            "name": "subnet01",
+            "properties": {
+              "addressPrefix": "10.0.0.0/26"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "apiVersion": "2017-08-01",
+      "name": "armWebApp-plan",
+      "type": "Microsoft.Web/serverFarms",
+      "location": "[resourceGroup().location]",
+      "sku": {
+        "name": "[parameters('appServicePlanSize')]",
+        "tier": "[parameters('appServicePlanSKU')]"
+      }
+    },
+    {
+      "apiVersion": "2016-08-01",
+      "name": "[parameters('webAppName')]",
+      "type": "Microsoft.Web/sites",
+      "location": "[resourceGroup().location]",
+      "properties": {
+        "name": "[parameters('webAppName')]",
+        "serverFarmId": "[resourceId('Microsoft.Web/serverFarms','armWebApp-plan')]",
+        "hostingEnvironment": ""
+      },
+      "dependsOn": [
+        "[concat('Microsoft.Web/serverFarms/','armWebApp-plan')]"
+      ],
+      "resources": [
+        {
+          "name": "web",
+          "type": "sourcecontrols",
+          "location": "[resourceGroup().location]",
+          "apiVersion": "2015-08-01",
+          "dependsOn": [
+            "[concat('Microsoft.Web/sites/', parameters('WebAppName'))]"
+          ],
+          "tags": {
+            "displayName": "web"
+          },
+          "properties": {
+            "repourl": "[parameters('packageURI')]",
+            "Branch": "master",
+            "IsManualIntegration": true
+          }
+        },
+        {
+          "name": "connectionstrings",
+          "type": "config",
+          "apiVersion": "2015-08-01",
+          "dependsOn": [
+            "[concat('Microsoft.Web/sites/', parameters('WebAppName'))]",
+            "[concat('Microsoft.Web/sites/', parameters('WebAppName'), '/sourcecontrols/web')]"
+          ],
+          "tags": {
+            "displayName": "WebAppConnectionStrings"
+          },
+          "properties": {
+            "defaultConnection": {
+              "value": "[concat('Data Source=tcp:', concat( variables('serverName'),'.database.windows.net'), ',1433;Initial Catalog=', parameters('databaseName'), ';User Id=', parameters('administratorLogin'), ';Password=', parameters('administratorLoginPassword'), ';')]",
+              "type": "SQLAzure"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "apiVersion": "2016-03-30",
+      "type": "Microsoft.Network/publicIPAddresses",
+      "name": "[concat(parameters('webAppName'),'-appGatewayIP')]",
+      "location": "[resourceGroup().location]",
+      "properties": {
+        "publicIPAllocationMethod": "Dynamic",
+        "dnsSettings": {
+          "domainNameLabel": "[concat(parameters('webAppName'),'-dnsname')]"
+        }
+      }
+    },
+    {
+      "apiVersion": "2017-06-01",
+      "name": "[concat(parameters('webAppName'),'-Gateway')]",
+      "type": "Microsoft.Network/applicationGateways",
+      "location": "[resourceGroup().location]",
+      "dependsOn": [
+        "[concat('Microsoft.Network/virtualNetworks/', parameters('vnetName'))]",
+        "[concat('Microsoft.Network/publicIPAddresses/',parameters('webAppName'),'-appGatewayIP')]"
+      ],
+      "properties": {
+        "sku": {
+          "name": "[parameters('applicationGatewaySize')]",
+          "tier": "WAF",
+          "capacity": "[parameters('capacity')]"
+        },
+        "gatewayIPConfigurations": [
+          {
+            "name": "appGatewayIpConfig",
+            "properties": {
+              "subnet": {
+                "id": "[variables('subnetRef')]"
+              }
+            }
+          }
+        ],
+        "frontendIPConfigurations": [
+          {
+            "name": "appGatewayFrontendIP",
+            "properties": {
+              "PublicIPAddress": {
+                "id": "[variables('publicIPRef')]"
+              }
+            }
+          }
+        ],
+        "frontendPorts": [
+          {
+            "name": "appGatewayFrontendPort",
+            "properties": {
+              "Port": 80
+            }
+          }
+        ],
+        "backendAddressPools": [
+          {
+            "name": "appGatewayBackendPool",
+            "properties": {
+              "BackendAddresses": [
+                {
+                  "IpAddress": "[concat(parameters('webAppName'),'.azurewebsites.net')]"
+                }
+              ]
+            }
+          }
+        ],
+        "backendHttpSettingsCollection": [
+          {
+            "name": "appGatewayBackendHttpSettings",
+            "properties": {
+              "Port": 80,
+              "Protocol": "Http",
+              "CookieBasedAffinity": "Disabled",
+              "PickHostNameFromBackendAddress": true,
+              "ProbeEnabled": "true",
+              "Probe": {
+                "id": "[concat(variables('applicationGatewayID'), '/probes/Probe1')]"
+              }
+            }
+          }
+        ],
+        "httpListeners": [
+          {
+            "name": "appGatewayHttpListener",
+            "properties": {
+              "FrontendIPConfiguration": {
+                "Id": "[concat(variables('applicationGatewayID'), '/frontendIPConfigurations/appGatewayFrontendIP')]"
+              },
+              "FrontendPort": {
+                "Id": "[concat(variables('applicationGatewayID'), '/frontendPorts/appGatewayFrontendPort')]"
+              },
+              "Protocol": "Http",
+              "SslCertificate": null
+            }
+          }
+        ],
+        "requestRoutingRules": [
+          {
+            "Name": "rule1",
+            "properties": {
+              "RuleType": "Basic",
+              "httpListener": {
+                "id": "[concat(variables('applicationGatewayID'), '/httpListeners/appGatewayHttpListener')]"
+              },
+              "backendAddressPool": {
+                "id": "[concat(variables('applicationGatewayID'), '/backendAddressPools/appGatewayBackendPool')]"
+              },
+              "backendHttpSettings": {
+                "id": "[concat(variables('applicationGatewayID'), '/backendHttpSettingsCollection/appGatewayBackendHttpSettings')]"
+              }
+            }
+          }
+        ],
+        "probes": [
+          {
+            "Name": "Probe1",
+            "properties": {
+              "Protocol": "Http",
+              "Path": "/",
+              "Interval": 30,
+              "Timeout": 120,
+              "UnhealthyThreshold": 3,
+              "MinServers": 0,
+              "PickHostNameFromBackendHttpSettings": true
+            }
+          }
+        ]
+      },
+      "resources": [
+        {
+          "type": "providers/diagnosticSettings",
+          "name": "Microsoft.Insights/service",
+          "dependsOn": [
+            "[concat('Microsoft.Network/applicationGateways/',variables('wan'))]",
+            "[concat('Microsoft.Storage/storageAccounts/',parameters('diagStorageAccount'))]"
+          ],
+          "apiVersion": "2015-07-01",
+          "properties": {
+            "storageAccountId": "[resourceId('Microsoft.Storage/storageAccounts',parameters('diagStorageAccount'))]",
+            "workspaceId": "[resourceId('Microsoft.OperationalInsights/workspaces',variables('workspaceName'))]",
+            "logs": [
+              {
+                "category": "ApplicationGatewayAccessLog",
+                "enabled": true,
+                "retentionPolicy": {
+                  "days": 0,
+                  "enabled": false
+                }
+              },
+              {
+                "category": "ApplicationGatewayPerformanceLog",
+                "enabled": true,
+                "retentionPolicy": {
+                  "days": 0,
+                  "enabled": false
+                }
+              },
+              {
+                "category": "ApplicationGatewayFirewallLog",
+                "enabled": true,
+                "retentionPolicy": {
+                  "days": 0,
+                  "enabled": false
+                }
+              }
+            ],
+            "metrics": [
+              {
+                "category": "AllMetrics",
+                "timegrain": "PT5M",
+                "enabled": true,
+                "retentionPolicy": {
+                  "enabled": false,
+                  "days": 0
+                }
+              }
+            ]
+          }
+        }
+      ]
+    },
+	
+	    {
+      "name": "[variables('serverName')]",
+      "type": "Microsoft.Sql/servers",
+      "apiVersion": "2014-04-01-preview",
+      "location": "[resourceGroup().location]",
+      "properties":
+      {
+        "administratorLogin": "[parameters('administratorLogin')]",
+        "administratorLoginPassword": "[parameters('administratorLoginPassword')]",
+        "version": "[variables('version')]"
+      },
+      "resources":
+      [
+        {
+          "name": "AllowAllWindowsAzureIps",
+          "type": "firewallrules",
+          "apiVersion": "2014-04-01-preview",
+          "location": "[resourceGroup().location]",
+          "dependsOn":
+          [
+            "[concat('Microsoft.Sql/servers/', variables('serverName'))]"
+          ],
+          "properties":
+          {
+            "endIpAddress": "0.0.0.0",
+            "startIpAddress": "0.0.0.0"
+          }
+        },
+        {
+          "name": "[parameters('databaseName')]",
+          "type": "databases",
+          "apiVersion": "2014-04-01-preview",
+          "location": "[resourceGroup().location]",
+          "dependsOn":
+          [
+            "[concat('Microsoft.Sql/servers/', variables('serverName'))]"
+          ],
+          "properties":
+          {
+            "collation": "[variables('collation')]",
+            "edition": "[variables('edition')]",
+            "maxSizeBytes": "[variables('maxSizeBytes')]",
+            "requestedServiceObjectiveName": "[variables('requestedServiceObjectiveName')]"
+          },
+		  "resources":[  			
+			{
+              "name": "Import",
+              "type": "extensions",
+              "apiVersion": "2014-04-01-preview",
+              "dependsOn":
+              [
+                "[concat('Microsoft.Sql/servers/', variables('serverName'), '/databases/', parameters('databaseName'))]"
+              ],
+              "properties":
+              {
+                "storageKeyType": "[variables('storageKeyType')]",
+                "storageKey": "[parameters('_artifactsLocationSasToken')]",
+                "storageUri": "[concat(parameters('_artifactsLocation'),'/', parameters('deployPackageFileName'))]",
+                "administratorLogin": "[parameters('administratorLogin')]",
+                "administratorLoginPassword": "[parameters('administratorLoginPassword')]",
+                "operationMode": "Import"
+              }
+			  },
+			{
+				"type": "providers/diagnosticSettings",
+				"name": "Microsoft.Insights/service",
+				"dependsOn":[
+					"[concat('Microsoft.Sql/servers/', variables('serverName'), '/databases/', parameters('databaseName'))]",
+					"[concat('Microsoft.OperationalInsights/workspaces/',variables('workspaceName'))]",
+					"[concat('Microsoft.Storage/storageAccounts/',parameters('diagStorageAccount'))]"					
+				],
+				"apiVersion": "2015-07-01",
+				"properties":{
+					"storageAccountId":"[resourceId('Microsoft.Storage/storageAccounts',parameters('diagStorageAccount'))]",
+					"workspaceId":"[resourceId('Microsoft.OperationalInsights/workspaces',variables('workspaceName'))]",
+					"logs":[
+						{
+							"category":"QueryStoreRuntimeStatistics",
+							"enabled":true,
+							"retentionPolicy":{
+								"days":7,
+								"enabled":false
+							}
+						},
+						{
+							"category":"QueryStoreWaitStatistics",
+							"enabled":true,
+							"retentionPolicy":{
+								"days":7,
+								"enabled":false
+							}
+						},
+						{
+							"category":"Errors",
+							"enabled":true,
+							"retentionPolicy":{
+								"days":7,
+								"enabled":false
+							}
+						},
+						{
+							"category":"DatabaseWaitStatistics",
+							"enabled":true,
+							"retentionPolicy":{
+								"days":7,
+								"enabled":false
+							}
+						},
+						{
+							"category":"Timeouts",
+							"enabled":true,
+							"retentionPolicy":{
+								"days":7,
+								"enabled":false
+							}
+						},
+						{
+							"category":"Blocks",
+							"enabled":true,
+							"retentionPolicy":{
+								"days":7,
+								"enabled":false
+							}
+						},
+						{
+							"category":"SQLInsights",
+							"enabled":true,
+							"retentionPolicy":{
+								"days":7,
+								"enabled":false
+							}
+						},
+						{
+							"category":"Audit",
+							"enabled":true,
+							"retentionPolicy":{
+								"days":7,
+								"enabled":false
+							}
+						}						
+					],
+					"metrics":	[{
+							"category": "AllMetrics",
+							"enabled":true,
+							"retentionPolicy":{
+								"enabled":false,
+								"days":7
+							}					
+					}]	
+				}	
+			}			  
+          ]
+        }		
+      ]
+    }	
+  ]
+}

@@ -1,0 +1,675 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+	"parameters":
+	{
+		"resourceId": {
+			"type": "string",
+			"metadata": {
+				"description": "ID of the public IP resource to which you want to enable alerts"
+			}
+		},			
+		"operator": {
+			"type": "string",
+			"defaultValue": "GreaterThan",
+			"allowedValues": [
+                "GreaterThan",
+                "GreaterThanOrEqual",
+                "LessThan",
+                "LessThanOrEqual"
+            ],			
+			"metadata": {
+				"description": "Operator comparing the current value with the threshold value"
+			}
+		},	
+		"threshold": {
+			"type": "string",		
+			"metadata": {
+				"description": "The threshold value at which the alert is activated"
+			}
+		},
+		"windowSize": {
+			"type": "string",
+			"defaultValue": "PT5M",	
+			"metadata": {
+				"description": "Period of time used to monitor alert activity based on the threshold. Must be between five minutes and one day. ISO 8601 duration format."
+			}
+		},
+		"aggregation": {
+			"type": "string",
+			"defaultValue": "Average",
+			"allowedValues": [
+                "Average",
+                "Last",
+                "Maximum",
+                "Minimum",
+                "Total"
+            ],			
+			"metadata": {
+				"description": "How the data that is collected should be combined over time"
+			}
+		},
+		"sendToServiceOwners": {
+			"type": "string",
+			"defaultValue": "true",
+			"metadata": {
+				"description": "Specifies whether alerts are sent to service owners"
+			}
+		},
+		"customEmailAddresses": {
+			"type": "string",		
+			"metadata": {
+				"description": "Comma-delimited email addresses where the alerts are also sent"
+			}
+		}		
+	},	
+	"variables":
+	{
+		"customEmails": "[split(parameters('customEmailAddresses'), ',')]"
+	},
+	"resources":[	
+		{		
+		  "type": "Microsoft.Insights/alertRules",
+		  "name": "Inbound_pkt_DDoS",
+		  "location": "[resourceGroup().location]",
+		  "apiVersion": "2016-03-01",
+		  "properties": {
+			"name": "Inbound_pkt_DDoS",
+			"description": "to detect inbound packet DDoS attacks",
+			"isEnabled": "true",
+			"condition":{
+				"odata.type": "Microsoft.Azure.Management.Insights.Models.ThresholdRuleCondition",
+				"dataSource": {
+					"odata.type": "Microsoft.Azure.Management.Insights.Models.RuleMetricDataSource",
+					"resourceUri": "[parameters('resourceId')]",
+					"metricName": "PacketsInDDoS"	
+				},
+			"operator": "[parameters('operator')]",
+			"threshold": "[parameters('threshold')]",
+			"windowSize": "[parameters('windowSize')]",
+			"timeAggregation": "[parameters('aggregation')]"			
+			},
+		"actions": [
+		{
+			"odata.type":"Microsoft.Azure.Management.Insights.Models.RuleEmailAction",
+			"sendToServiceOwners": "[parameters('sendToServiceOwners')]",
+			"customEmails": "[variables('customEmails')]"
+		}
+		]	
+	}
+	},
+		{		
+		  "type": "Microsoft.Insights/alertRules",
+		  "name": "Inbound_pkt_dropped_DDoS",
+		  "location": "[resourceGroup().location]",
+		  "apiVersion": "2016-03-01",
+		  "properties": {
+			"name": "Inbound_pkt_dropped_DDoS",
+			"description": "Inbound packets dropped DDoS",
+			"isEnabled": "true",
+			"condition":{
+				"odata.type": "Microsoft.Azure.Management.Insights.Models.ThresholdRuleCondition",
+				"dataSource": {
+					"odata.type": "Microsoft.Azure.Management.Insights.Models.RuleMetricDataSource",
+					"resourceUri": "[parameters('resourceId')]",
+					"metricName": "PacketsDroppedDDoS"	
+				},
+			"operator": "[parameters('operator')]",
+			"threshold": "[parameters('threshold')]",
+			"windowSize": "[parameters('windowSize')]",
+			"timeAggregation": "[parameters('aggregation')]"			
+			},
+		"actions": [
+		{
+			"odata.type":"Microsoft.Azure.Management.Insights.Models.RuleEmailAction",
+			"sendToServiceOwners": "[parameters('sendToServiceOwners')]",
+			"customEmails": "[variables('customEmails')]"
+		}
+		]	
+	}
+	},
+		{		
+		  "type": "Microsoft.Insights/alertRules",
+		  "name": "Inbound_pkt_forwarded_DDoS",
+		  "location": "[resourceGroup().location]",
+		  "apiVersion": "2016-03-01",
+		  "properties": {
+			"name": "Inbound_pkt_forwarded_DDoS",
+			"description": "Inbound packets forwarded DDoS",
+			"isEnabled": "true",
+			"condition":{
+				"odata.type": "Microsoft.Azure.Management.Insights.Models.ThresholdRuleCondition",
+				"dataSource": {
+					"odata.type": "Microsoft.Azure.Management.Insights.Models.RuleMetricDataSource",
+					"resourceUri": "[parameters('resourceId')]",
+					"metricName": "PacketsForwardedDDoS"	
+				},
+			"operator": "[parameters('operator')]",
+			"threshold": "[parameters('threshold')]",
+			"windowSize": "[parameters('windowSize')]",
+			"timeAggregation": "[parameters('aggregation')]"			
+			},
+		"actions": [
+		{
+			"odata.type":"Microsoft.Azure.Management.Insights.Models.RuleEmailAction",
+			"sendToServiceOwners": "[parameters('sendToServiceOwners')]",
+			"customEmails": "[variables('customEmails')]"
+		}
+		]	
+	}
+	},
+		{		
+		  "type": "Microsoft.Insights/alertRules",
+		  "name": "Inbound_TCP_pkt_DDoS",
+		  "location": "[resourceGroup().location]",
+		  "apiVersion": "2016-03-01",
+		  "properties": {
+			"name": "Inbound_TCP_pkt_DDoS",
+			"description": "Inbound TCP packets DDoS",
+			"isEnabled": "true",
+			"condition":{
+				"odata.type": "Microsoft.Azure.Management.Insights.Models.ThresholdRuleCondition",
+				"dataSource": {
+					"odata.type": "Microsoft.Azure.Management.Insights.Models.RuleMetricDataSource",
+					"resourceUri": "[parameters('resourceId')]",
+					"metricName": "TCPPacketsInDDoS"	
+				},
+			"operator": "[parameters('operator')]",
+			"threshold": "[parameters('threshold')]",
+			"windowSize": "[parameters('windowSize')]",
+			"timeAggregation": "[parameters('aggregation')]"			
+			},
+		"actions": [
+		{
+			"odata.type":"Microsoft.Azure.Management.Insights.Models.RuleEmailAction",
+			"sendToServiceOwners": "[parameters('sendToServiceOwners')]",
+			"customEmails": "[variables('customEmails')]"
+		}
+		]	
+	}
+	},
+		{		
+		  "type": "Microsoft.Insights/alertRules",
+		  "name": "Inbound_TCP_pkt_dropped_DDoS",
+		  "location": "[resourceGroup().location]",
+		  "apiVersion": "2016-03-01",
+		  "properties": {
+			"name": "Inbound_TCP_pkt_dropped_DDoS",
+			"description": "Inbound TCP packets dropped DDoS",
+			"isEnabled": "true",
+			"condition":{
+				"odata.type": "Microsoft.Azure.Management.Insights.Models.ThresholdRuleCondition",
+				"dataSource": {
+					"odata.type": "Microsoft.Azure.Management.Insights.Models.RuleMetricDataSource",
+					"resourceUri": "[parameters('resourceId')]",
+					"metricName": "TCPPacketsDroppedDDoS"	
+				},
+			"operator": "[parameters('operator')]",
+			"threshold": "[parameters('threshold')]",
+			"windowSize": "[parameters('windowSize')]",
+			"timeAggregation": "[parameters('aggregation')]"			
+			},
+		"actions": [
+		{
+			"odata.type":"Microsoft.Azure.Management.Insights.Models.RuleEmailAction",
+			"sendToServiceOwners": "[parameters('sendToServiceOwners')]",
+			"customEmails": "[variables('customEmails')]"
+		}
+		]	
+	}
+	},
+		{		
+		  "type": "Microsoft.Insights/alertRules",
+		  "name": "Inbound_TCP_pkt_forwarded_DDoS",
+		  "location": "[resourceGroup().location]",
+		  "apiVersion": "2016-03-01",
+		  "properties": {
+			"name": "Inbound_TCP_pkt_forwarded_DDoS",
+			"description": "Inbound TCP packets forwarded DDoS",
+			"isEnabled": "true",
+			"condition":{
+				"odata.type": "Microsoft.Azure.Management.Insights.Models.ThresholdRuleCondition",
+				"dataSource": {
+					"odata.type": "Microsoft.Azure.Management.Insights.Models.RuleMetricDataSource",
+					"resourceUri": "[parameters('resourceId')]",
+					"metricName": "TCPPacketsForwardedDDoS"	
+				},
+			"operator": "[parameters('operator')]",
+			"threshold": "[parameters('threshold')]",
+			"windowSize": "[parameters('windowSize')]",
+			"timeAggregation": "[parameters('aggregation')]"			
+			},
+		"actions": [
+		{
+			"odata.type":"Microsoft.Azure.Management.Insights.Models.RuleEmailAction",
+			"sendToServiceOwners": "[parameters('sendToServiceOwners')]",
+			"customEmails": "[variables('customEmails')]"
+		}
+		]	
+	}
+	},
+		{		
+		  "type": "Microsoft.Insights/alertRules",
+		  "name": "Inbound_UDP_pkt_DDoS",
+		  "location": "[resourceGroup().location]",
+		  "apiVersion": "2016-03-01",
+		  "properties": {
+			"name": "Inbound_UDP_pkt_DDoS",
+			"description": "Inbound UDP packets DDoS",
+			"isEnabled": "true",
+			"condition":{
+				"odata.type": "Microsoft.Azure.Management.Insights.Models.ThresholdRuleCondition",
+				"dataSource": {
+					"odata.type": "Microsoft.Azure.Management.Insights.Models.RuleMetricDataSource",
+					"resourceUri": "[parameters('resourceId')]",
+					"metricName": "UDPPacketsInDDoS"	
+				},
+			"operator": "[parameters('operator')]",
+			"threshold": "[parameters('threshold')]",
+			"windowSize": "[parameters('windowSize')]",
+			"timeAggregation": "[parameters('aggregation')]"			
+			},
+		"actions": [
+		{
+			"odata.type":"Microsoft.Azure.Management.Insights.Models.RuleEmailAction",
+			"sendToServiceOwners": "[parameters('sendToServiceOwners')]",
+			"customEmails": "[variables('customEmails')]"
+		}
+		]	
+	}
+	},
+		{		
+		  "type": "Microsoft.Insights/alertRules",
+		  "name": "Inbound_UDP_pkt_dropped_DDoS",
+		  "location": "[resourceGroup().location]",
+		  "apiVersion": "2016-03-01",
+		  "properties": {
+			"name": "Inbound_UDP_pkt_dropped_DDoS",
+			"description": "Inbound UDP packets dropped DDoS",
+			"isEnabled": "true",
+			"condition":{
+				"odata.type": "Microsoft.Azure.Management.Insights.Models.ThresholdRuleCondition",
+				"dataSource": {
+					"odata.type": "Microsoft.Azure.Management.Insights.Models.RuleMetricDataSource",
+					"resourceUri": "[parameters('resourceId')]",
+					"metricName": "UDPPacketsDroppedDDoS"	
+				},
+			"operator": "[parameters('operator')]",
+			"threshold": "[parameters('threshold')]",
+			"windowSize": "[parameters('windowSize')]",
+			"timeAggregation": "[parameters('aggregation')]"			
+			},
+		"actions": [
+		{
+			"odata.type":"Microsoft.Azure.Management.Insights.Models.RuleEmailAction",
+			"sendToServiceOwners": "[parameters('sendToServiceOwners')]",
+			"customEmails": "[variables('customEmails')]"
+		}
+		]	
+	}
+	},
+		{		
+		  "type": "Microsoft.Insights/alertRules",
+		  "name": "Inbound_UDP_pkt_forwarded_DDoS",
+		  "location": "[resourceGroup().location]",
+		  "apiVersion": "2016-03-01",
+		  "properties": {
+			"name": "Inbound_UDP_pkt_forwarded_DDoS",
+			"description": "Inbound UDP packets forwarded DDoS",
+			"isEnabled": "true",
+			"condition":{
+				"odata.type": "Microsoft.Azure.Management.Insights.Models.ThresholdRuleCondition",
+				"dataSource": {
+					"odata.type": "Microsoft.Azure.Management.Insights.Models.RuleMetricDataSource",
+					"resourceUri": "[parameters('resourceId')]",
+					"metricName": "UDPPacketsForwardedDDoS"	
+				},
+			"operator": "[parameters('operator')]",
+			"threshold": "[parameters('threshold')]",
+			"windowSize": "[parameters('windowSize')]",
+			"timeAggregation": "[parameters('aggregation')]"			
+			},
+		"actions": [
+		{
+			"odata.type":"Microsoft.Azure.Management.Insights.Models.RuleEmailAction",
+			"sendToServiceOwners": "[parameters('sendToServiceOwners')]",
+			"customEmails": "[variables('customEmails')]"
+		}
+		]	
+	}
+	},
+		{		
+		  "type": "Microsoft.Insights/alertRules",
+		  "name": "Inbound_bytes_DDoS",
+		  "location": "[resourceGroup().location]",
+		  "apiVersion": "2016-03-01",
+		  "properties": {
+			"name": "Inbound_bytes_DDoS",
+			"description": "Inbound bytes DDoS",
+			"isEnabled": "true",
+			"condition":{
+				"odata.type": "Microsoft.Azure.Management.Insights.Models.ThresholdRuleCondition",
+				"dataSource": {
+					"odata.type": "Microsoft.Azure.Management.Insights.Models.RuleMetricDataSource",
+					"resourceUri": "[parameters('resourceId')]",
+					"metricName": "BytesInDDoS"	
+				},
+			"operator": "[parameters('operator')]",
+			"threshold": "[parameters('threshold')]",
+			"windowSize": "[parameters('windowSize')]",
+			"timeAggregation": "[parameters('aggregation')]"			
+			},
+		"actions": [
+		{
+			"odata.type":"Microsoft.Azure.Management.Insights.Models.RuleEmailAction",
+			"sendToServiceOwners": "[parameters('sendToServiceOwners')]",
+			"customEmails": "[variables('customEmails')]"
+		}
+		]	
+	}
+	},
+		{		
+		  "type": "Microsoft.Insights/alertRules",
+		  "name": "Inbound_bytes_dropped_DDoS",
+		  "location": "[resourceGroup().location]",
+		  "apiVersion": "2016-03-01",
+		  "properties": {
+			"name": "Inbound_bytes_dropped_DDoS",
+			"description": "Inbound bytes dropped DDoS",
+			"isEnabled": "true",
+			"condition":{
+				"odata.type": "Microsoft.Azure.Management.Insights.Models.ThresholdRuleCondition",
+				"dataSource": {
+					"odata.type": "Microsoft.Azure.Management.Insights.Models.RuleMetricDataSource",
+					"resourceUri": "[parameters('resourceId')]",
+					"metricName": "BytesDroppedDDoS"	
+				},
+			"operator": "[parameters('operator')]",
+			"threshold": "[parameters('threshold')]",
+			"windowSize": "[parameters('windowSize')]",
+			"timeAggregation": "[parameters('aggregation')]"			
+			},
+		"actions": [
+		{
+			"odata.type":"Microsoft.Azure.Management.Insights.Models.RuleEmailAction",
+			"sendToServiceOwners": "[parameters('sendToServiceOwners')]",
+			"customEmails": "[variables('customEmails')]"
+		}
+		]	
+	}
+	},
+		{		
+		  "type": "Microsoft.Insights/alertRules",
+		  "name": "Inbound_bytes_forwarded_DDoS",
+		  "location": "[resourceGroup().location]",
+		  "apiVersion": "2016-03-01",
+		  "properties": {
+			"name": "Inbound_bytes_forwarded_DDoS",
+			"description": "Inbound bytes forwarded DDoS",
+			"isEnabled": "true",
+			"condition":{
+				"odata.type": "Microsoft.Azure.Management.Insights.Models.ThresholdRuleCondition",
+				"dataSource": {
+					"odata.type": "Microsoft.Azure.Management.Insights.Models.RuleMetricDataSource",
+					"resourceUri": "[parameters('resourceId')]",
+					"metricName": "BytesForwardedDDoS"	
+				},
+			"operator": "[parameters('operator')]",
+			"threshold": "[parameters('threshold')]",
+			"windowSize": "[parameters('windowSize')]",
+			"timeAggregation": "[parameters('aggregation')]"			
+			},
+		"actions": [
+		{
+			"odata.type":"Microsoft.Azure.Management.Insights.Models.RuleEmailAction",
+			"sendToServiceOwners": "[parameters('sendToServiceOwners')]",
+			"customEmails": "[variables('customEmails')]"
+		}
+		]	
+	}
+	},	
+		{		
+		  "type": "Microsoft.Insights/alertRules",
+		  "name": "Inbound_TCP_bytes_DDoS",
+		  "location": "[resourceGroup().location]",
+		  "apiVersion": "2016-03-01",
+		  "properties": {
+			"name": "Inbound_TCP_bytes_DDoS",
+			"description": "Inbound TCP bytes DDoS",
+			"isEnabled": "true",
+			"condition":{
+				"odata.type": "Microsoft.Azure.Management.Insights.Models.ThresholdRuleCondition",
+				"dataSource": {
+					"odata.type": "Microsoft.Azure.Management.Insights.Models.RuleMetricDataSource",
+					"resourceUri": "[parameters('resourceId')]",
+					"metricName": "TCPBytesInDDoS"	
+				},
+			"operator": "[parameters('operator')]",
+			"threshold": "[parameters('threshold')]",
+			"windowSize": "[parameters('windowSize')]",
+			"timeAggregation": "[parameters('aggregation')]"			
+			},
+		"actions": [
+		{
+			"odata.type":"Microsoft.Azure.Management.Insights.Models.RuleEmailAction",
+			"sendToServiceOwners": "[parameters('sendToServiceOwners')]",
+			"customEmails": "[variables('customEmails')]"
+		}
+		]	
+	}
+	},
+		{		
+		  "type": "Microsoft.Insights/alertRules",
+		  "name": "Inbound_TCP_bytes_dropped_DDoS",
+		  "location": "[resourceGroup().location]",
+		  "apiVersion": "2016-03-01",
+		  "properties": {
+			"name": "Inbound_TCP_bytes_dropped_DDoS",
+			"description": "Inbound TCP bytes dropped DDoS",
+			"isEnabled": "true",
+			"condition":{
+				"odata.type": "Microsoft.Azure.Management.Insights.Models.ThresholdRuleCondition",
+				"dataSource": {
+					"odata.type": "Microsoft.Azure.Management.Insights.Models.RuleMetricDataSource",
+					"resourceUri": "[parameters('resourceId')]",
+					"metricName": "TCPBytesDroppedDDoS"	
+				},
+			"operator": "[parameters('operator')]",
+			"threshold": "[parameters('threshold')]",
+			"windowSize": "[parameters('windowSize')]",
+			"timeAggregation": "[parameters('aggregation')]"			
+			},
+		"actions": [
+		{
+			"odata.type":"Microsoft.Azure.Management.Insights.Models.RuleEmailAction",
+			"sendToServiceOwners": "[parameters('sendToServiceOwners')]",
+			"customEmails": "[variables('customEmails')]"
+		}
+		]	
+	}
+	},
+		{		
+		  "type": "Microsoft.Insights/alertRules",
+		  "name": "Inbound_TCP_bytes_forwarded_DDoS",
+		  "location": "[resourceGroup().location]",
+		  "apiVersion": "2016-03-01",
+		  "properties": {
+			"name": "Inbound_TCP_bytes_forwarded_DDoS",
+			"description": "Inbound TCP bytes forwarded DDoS",
+			"isEnabled": "true",
+			"condition":{
+				"odata.type": "Microsoft.Azure.Management.Insights.Models.ThresholdRuleCondition",
+				"dataSource": {
+					"odata.type": "Microsoft.Azure.Management.Insights.Models.RuleMetricDataSource",
+					"resourceUri": "[parameters('resourceId')]",
+					"metricName": "TCPBytesForwardedDDoS"	
+				},
+			"operator": "[parameters('operator')]",
+			"threshold": "[parameters('threshold')]",
+			"windowSize": "[parameters('windowSize')]",
+			"timeAggregation": "[parameters('aggregation')]"			
+			},
+		"actions": [
+		{
+			"odata.type":"Microsoft.Azure.Management.Insights.Models.RuleEmailAction",
+			"sendToServiceOwners": "[parameters('sendToServiceOwners')]",
+			"customEmails": "[variables('customEmails')]"
+		}
+		]	
+	}
+	},	
+		{		
+		  "type": "Microsoft.Insights/alertRules",
+		  "name": "Inbound_UDP_bytes_DDoS",
+		  "location": "[resourceGroup().location]",
+		  "apiVersion": "2016-03-01",
+		  "properties": {
+			"name": "Inbound_UDP_bytes_DDoS",
+			"description": "Inbound UDP bytes DDoS",
+			"isEnabled": "true",
+			"condition":{
+				"odata.type": "Microsoft.Azure.Management.Insights.Models.ThresholdRuleCondition",
+				"dataSource": {
+					"odata.type": "Microsoft.Azure.Management.Insights.Models.RuleMetricDataSource",
+					"resourceUri": "[parameters('resourceId')]",
+					"metricName": "UDPBytesInDDoS"	
+				},
+			"operator": "[parameters('operator')]",
+			"threshold": "[parameters('threshold')]",
+			"windowSize": "[parameters('windowSize')]",
+			"timeAggregation": "[parameters('aggregation')]"			
+			},
+		"actions": [
+		{
+			"odata.type":"Microsoft.Azure.Management.Insights.Models.RuleEmailAction",
+			"sendToServiceOwners": "[parameters('sendToServiceOwners')]",
+			"customEmails": "[variables('customEmails')]"
+		}
+		]	
+	}
+	},	
+		{		
+		  "type": "Microsoft.Insights/alertRules",
+		  "name": "Inbound_UDP_bytes_dropped_DDoS",
+		  "location": "[resourceGroup().location]",
+		  "apiVersion": "2016-03-01",
+		  "properties": {
+			"name": "Inbound_UDP_bytes_dropped_DDoS",
+			"description": "Inbound UDP bytes dropped DDoS",
+			"isEnabled": "true",
+			"condition":{
+				"odata.type": "Microsoft.Azure.Management.Insights.Models.ThresholdRuleCondition",
+				"dataSource": {
+					"odata.type": "Microsoft.Azure.Management.Insights.Models.RuleMetricDataSource",
+					"resourceUri": "[parameters('resourceId')]",
+					"metricName": "UDPBytesDroppedDDoS"	
+				},
+			"operator": "[parameters('operator')]",
+			"threshold": "[parameters('threshold')]",
+			"windowSize": "[parameters('windowSize')]",
+			"timeAggregation": "[parameters('aggregation')]"			
+			},
+		"actions": [
+		{
+			"odata.type":"Microsoft.Azure.Management.Insights.Models.RuleEmailAction",
+			"sendToServiceOwners": "[parameters('sendToServiceOwners')]",
+			"customEmails": "[variables('customEmails')]"
+		}
+		]	
+	}
+	},	
+		{		
+		  "type": "Microsoft.Insights/alertRules",
+		  "name": "Inbound_UDP_bytes_forwarded_DDoS",
+		  "location": "[resourceGroup().location]",
+		  "apiVersion": "2016-03-01",
+		  "properties": {
+			"name": "Inbound_UDP_bytes_forwarded_DDoS",
+			"description": "Inbound UDP bytes forwarded DDoS",
+			"isEnabled": "true",
+			"condition":{
+				"odata.type": "Microsoft.Azure.Management.Insights.Models.ThresholdRuleCondition",
+				"dataSource": {
+					"odata.type": "Microsoft.Azure.Management.Insights.Models.RuleMetricDataSource",
+					"resourceUri": "[parameters('resourceId')]",
+					"metricName": "UDPBytesForwardedDDoS"	
+				},
+			"operator": "[parameters('operator')]",
+			"threshold": "[parameters('threshold')]",
+			"windowSize": "[parameters('windowSize')]",
+			"timeAggregation": "[parameters('aggregation')]"			
+			},
+		"actions": [
+		{
+			"odata.type":"Microsoft.Azure.Management.Insights.Models.RuleEmailAction",
+			"sendToServiceOwners": "[parameters('sendToServiceOwners')]",
+			"customEmails": "[variables('customEmails')]"
+		}
+		]	
+	}
+	},
+		{		
+		  "type": "Microsoft.Insights/alertRules",
+		  "name": "Under_DDoS_Attack_Or_Not",
+		  "location": "[resourceGroup().location]",
+		  "apiVersion": "2016-03-01",
+		  "properties": {
+			"name": "Under_DDoS_Attack_Or_Not",
+			"description": "Under DDoS Attack Or Not",
+			"isEnabled": "true",
+			"condition":{
+				"odata.type": "Microsoft.Azure.Management.Insights.Models.ThresholdRuleCondition",
+				"dataSource": {
+					"odata.type": "Microsoft.Azure.Management.Insights.Models.RuleMetricDataSource",
+					"resourceUri": "[parameters('resourceId')]",
+					"metricName": "IfUnderDDoSAttack"	
+				},
+			"operator": "[parameters('operator')]",
+			"threshold": "[parameters('threshold')]",
+			"windowSize": "[parameters('windowSize')]",
+			"timeAggregation": "[parameters('aggregation')]"			
+			},
+		"actions": [
+		{
+			"odata.type":"Microsoft.Azure.Management.Insights.Models.RuleEmailAction",
+			"sendToServiceOwners": "[parameters('sendToServiceOwners')]",
+			"customEmails": "[variables('customEmails')]"
+		}
+		]	
+	}
+	},
+		{		
+		  "type": "Microsoft.Insights/alertRules",
+		  "name": "Inbound_TCP_Pkt_to_trigger_DDoS_mitigation",
+		  "location": "[resourceGroup().location]",
+		  "apiVersion": "2016-03-01",
+		  "properties": {
+			"name": "Inbound_TCP_Pkt_to_trigger_DDoS_mitigation",
+			"description": "Inbound TCP Packet to trigger DDoS mitigation",
+			"isEnabled": "true",
+			"condition":{
+				"odata.type": "Microsoft.Azure.Management.Insights.Models.ThresholdRuleCondition",
+				"dataSource": {
+					"odata.type": "Microsoft.Azure.Management.Insights.Models.RuleMetricDataSource",
+					"resourceUri": "[parameters('resourceId')]",
+					"metricName": "DDoSTriggerTCPPackets"	
+				},
+			"operator": "[parameters('operator')]",
+			"threshold": "[parameters('threshold')]",
+			"windowSize": "[parameters('windowSize')]",
+			"timeAggregation": "[parameters('aggregation')]"			
+			},
+		"actions": [
+		{
+			"odata.type":"Microsoft.Azure.Management.Insights.Models.RuleEmailAction",
+			"sendToServiceOwners": "[parameters('sendToServiceOwners')]",
+			"customEmails": "[variables('customEmails')]"
+		}
+		]	
+	}
+	}	
+	
+
+	
+	]
+}

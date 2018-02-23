@@ -1,0 +1,24 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+	"parameters": {
+		"operator": {
+			"value": "GreaterThan"
+		},	
+		"threshold": {
+			"value": "2"
+		},
+		"windowSize": {
+			"value": "PT5M"
+		},
+		"aggregation": {
+			"value": "Average"
+		},
+		"sendToServiceOwners": {
+			"value": "true"
+		},
+		"customEmailAddresses": {
+			"value": "manav2k6@gmail.com"
+		}
+     }
+}

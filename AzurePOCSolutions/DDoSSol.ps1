@@ -1,4 +1,10 @@
-﻿$vnetProps = (Get-AzureRmResource -ResourceType "Microsoft.Network/virtualNetworks" -ResourceGroup "Contoso-DevOps" -ResourceName "Contoso-DevOps-vnet").Properties
+﻿Param(
+     [string] [Parameter(Mandatory=$true)] $ResourceGroupName,
+     [string] [Parameter(Mandatory=$true)] $VnetName
+    
+   )
+
+$vnetProps = (Get-AzureRmResource -ResourceType "Microsoft.Network/virtualNetworks" -ResourceGroup "$ResourceGroupName" -ResourceName "$VnetName").Properties
 $vnetProps.enableDdosProtection = $true
 $vnetProps.enableVmProtection = $true
-Set-AzureRmResource -PropertyObject $vnetProps -ResourceGroupName "Contoso-DevOps" -ResourceName "Contoso-DevOps-vnet" -ResourceType Microsoft.Network/virtualNetworks -Force
+Set-AzureRmResource -PropertyObject $vnetProps -ResourceGroupName "$ResourceGroupName" -ResourceName "$VnetName" -ResourceType "Microsoft.Network/virtualNetworks" -Force
