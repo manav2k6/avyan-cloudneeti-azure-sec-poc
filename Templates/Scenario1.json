@@ -57,15 +57,15 @@
         },
         "location": {
             "type": "string",
-            "defaultValue": "SouthIndia"
+            "defaultValue": "Southeast Asia"
         },
         "virtualMachineName": {
             "type": "string",
-            "defaultValue": "testvm"
+            "defaultValue": "AzurePOCVM"
         },
         "adminUsername": {
             "type": "string",
-            "defaultValue": "testuser"
+            "defaultValue": "mytestuser"
         },
         "adminPassword": {
             "type": "securestring",
@@ -85,7 +85,7 @@
         "vnetId": "[resourceId('Microsoft.Network/virtualNetworks', variables('virtualNetworkName'))]",
         "subnetRef": "[concat(variables('vnetId'), '/subnets/', variables('subnetName'))]",
         "virtualMachineSize": "Standard_DS2_v2",
-        "virtualNetworkName": "test-vnet",
+        "virtualNetworkName": "AzurePOCVNet",
         "subnetname": "subnet1",
         "networkInterfaceName": "test-nic",
         "networkSecurityGroupName": "test-nsg",
