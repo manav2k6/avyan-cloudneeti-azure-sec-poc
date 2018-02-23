@@ -256,25 +256,6 @@
                     }
                 ]
             }
-        },
-  {
-    "type": "providers/diagnosticSettings",
-    "name": "DDOSMonitoring",
-	 "dependsOn": [
-      "[resourceId('Microsoft.Network/publicIPAddresses', variables('publicIpAddressName'))]"
-    ],
-    "apiVersion": "2017-05-01-preview",
-    "properties": {
-      "name": "DDOSMonitoring",
-      "storageAccountId": "[resourceId('Microsoft.Storage/storageAccounts', parameters('diagnosticsStorageAccountName'))]",
-      "logs": [ 
-        {
-          "category": "/* log category name */",
-          "enabled": true,
-          "retentionPolicy": {
-            "days": 0,
-            "enabled": false
-          }
         }
       ],
       "metrics": [
