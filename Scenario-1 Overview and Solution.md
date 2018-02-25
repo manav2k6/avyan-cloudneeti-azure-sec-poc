@@ -1,4 +1,4 @@
-# This POC consists of 
+# This POC will showcase DDOS Atack and mitigation
 # 1. Automated Deployment of Resource Group with resources
 The template allows us to deploy all the required resources as listed below. a few different options for the Windows version, using the latest patched version.This will deploy a Standard_DS2_v2 VM in the resource group location and return the fully qualified domain name of the VM. VM will be created using Unmanaged Disks (Storage Account) with enablement of boot diagnostics.
 
