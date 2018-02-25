@@ -1,5 +1,3 @@
-#Requires -Version 3.0
-
 Param(
      [string] [Parameter(Mandatory=$true)] $Command,
      [string] [Parameter(Mandatory=$true)] $DeploymentPrefix
@@ -22,10 +20,14 @@ New-AzureRmResourceGroupDeployment -ResourceGroupName $ResourceGroupName -Templa
      }
    Metigate
      {
-$VnetName = "test-vnet"
+$VnetName = 'test-vnet'
 $vnetProps = (Get-AzureRmResource -ResourceType "Microsoft.Network/virtualNetworks" -ResourceGroup "$ResourceGroupName" -ResourceName "$VnetName").Properties
 $vnetProps.enableDdosProtection = $true
 $vnetProps.enableVmProtection = $true
 Set-AzureRmResource -PropertyObject $vnetProps -ResourceGroupName "$ResourceGroupName" -ResourceName "$VnetName" -ResourceType "Microsoft.Network/virtualNetworks" -Force
+     }
+   ClearResources
+     {
+Remove-AzureRmResourceGroup -Name $ResourceGroupName 
      }
 }
