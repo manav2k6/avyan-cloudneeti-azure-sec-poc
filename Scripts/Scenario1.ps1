@@ -5,8 +5,8 @@ Param(
      [string] [Parameter(Mandatory=$true)] $ResourceGroupLocation
      #[string] [Parameter(Mandatory=$true)] $VMName
    )
-$TemplateFile = "c:\poc\templates\Scenario1.json"
-$TemplateFile1parameter = "c:\poc\templates\IP-Param.json"
+$TemplateFile = "c:\poc1\templates\Scenario1.json"
+$TemplateFile1parameter = "c:\poc1\templates\IP-Param.json"
 
 
 # Create or update the resource group using the specified template file and template parameters file
