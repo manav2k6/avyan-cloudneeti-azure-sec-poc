@@ -1,0 +1,312 @@
+{
+  "$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": 
+	{
+   "webAppName": 
+     {
+      "type": "string"
+     },
+	  "sqlservername": 
+     {
+      "type": "string"
+     },
+   "artifactsLocation":
+    {
+      "type": "string"
+    },
+    "artifactsLocationSasToken":
+    {
+      "type": "string"
+    },
+},
+"variables": {
+"vnetName":"scenario2vnet",
+"administratorLogin":"testuser",
+"administratorLoginPassword":"Welkom@123",
+"databaseName":"iisweb",
+"deployPackageFileName":"iisweb.bacpac",
+"appServicePlanSKU":"Free",
+"appServicePlanSize":"F1",
+"packageURI":"https://github.com/manav2k6/demowebsite.git",
+"logAnalyticsServiceName":"MyLogA01",
+"environment":"POCenv",
+"omsLocation":"Southeast Asia",
+"omsdataRetention":90,
+"workspaceSKU":"Free",
+"diagStorageAccount":"diagstor180681",
+"workspaceName": "[toLower(concat(variables('logAnalyticsServiceName'),'-analytics-',variables('environment')))]",
+    "solutionNames": [
+      "AzureWebAppsAnalytics",
+      "AzureSQLAnalytics",
+      "Security"
+    ],
+	"collation": "SQL_Latin1_General_CP1_CI_AS",
+    "edition": "Premium",
+    "maxSizeBytes": "1073741824",
+    "requestedServiceObjectiveName": "P1",
+    "storageKeyType": "SharedAccessKey",
+    "version": "12.0",
+   },
+  "resources": [
+    {
+      "type": "Microsoft.Storage/storageAccounts",
+      "name": "[variables('diagStorageAccount')]",
+      "apiVersion": "2017-06-01",
+      "location": "[resourceGroup().location]",
+      "sku": {
+        "name": "Standard_LRS"
+      }
+    },
+    {
+      "apiVersion": "2017-03-03-preview",
+      "name": "[variables('workspaceName')]",
+      "type": "Microsoft.OperationalInsights/workspaces",
+      "location": "[variables('omsLocation')]",
+      "properties": {
+        "sku": {
+          "name": "[variables('workspaceSKU')]"
+        },
+        "retention": "[variables('omsdataRetention')]"
+      }
+    },
+    {
+      "id": "[concat(resourceGroup().id, '/providers/Microsoft.OperationsManagement/solutions/', variables('solutionNames')[copyIndex()], '(', variables('workspaceName'), ')')]",
+      "type": "Microsoft.OperationsManagement/solutions",
+      "name": "[concat(variables('solutionNames')[copyIndex()], '(', variables('workspaceName'), ')')]",
+      "apiVersion": "2015-11-01-preview",
+      "location": "[variables('omsLocation')]",
+      "dependsOn": [
+        "[variables('workspaceName')]"
+      ],
+      "copy": {
+        "name": "copy-oms-solutions",
+        "count": "[length(variables('solutionNames'))]"
+      },
+      "plan": {
+        "name": "[concat(variables('solutionNames')[copyIndex()], '(', variables('workspaceName'), ')')]",
+        "product": "[concat('OMSGallery/', variables('solutionNames')[copyIndex()])]",
+        "promotionCode": "",
+        "publisher": "Microsoft"
+      },
+      "properties": {
+        "workspaceResourceId": "[concat(resourceGroup().id, '/providers/Microsoft.OperationalInsights/workspaces/', variables('workspaceName'))]"
+      }
+    },
+    {
+      "apiVersion": "2017-08-01",
+      "name": "armWebApp-plan",
+      "type": "Microsoft.Web/serverFarms",
+      "location": "[resourceGroup().location]",
+      "sku": {
+        "name": "[variables('appServicePlanSize')]",
+        "tier": "[variables('appServicePlanSKU')]"
+      }
+    },
+    {
+      "apiVersion": "2016-08-01",
+      "name": "[parameters('webAppName')]",
+      "type": "Microsoft.Web/sites",
+      "location": "[resourceGroup().location]",
+      "properties": {
+        "name": "[parameters('webAppName')]",
+        "serverFarmId": "[resourceId('Microsoft.Web/serverFarms','armWebApp-plan')]",
+        "hostingEnvironment": ""
+      },
+      "dependsOn": [
+        "[concat('Microsoft.Web/serverFarms/','armWebApp-plan')]"
+      ],
+      "resources": [
+        {
+          "name": "web",
+          "type": "sourcecontrols",
+          "location": "[resourceGroup().location]",
+          "apiVersion": "2015-08-01",
+          "dependsOn": [
+            "[concat('Microsoft.Web/sites/', parameters('WebAppName'))]"
+          ],
+          "tags": {
+            "displayName": "web"
+          },
+          "properties": {
+            "repourl": "[variables('packageURI')]",
+            "Branch": "master",
+            "IsManualIntegration": true
+          }
+        },
+        {
+          "name": "connectionstrings",
+          "type": "config",
+          "apiVersion": "2015-08-01",
+          "dependsOn": [
+            "[concat('Microsoft.Web/sites/', parameters('WebAppName'))]"
+            ],
+          "tags": {
+            "displayName": "WebAppConnectionStrings"
+          },
+          "properties": {
+            "defaultConnection": {
+              "value": "[concat('Data Source=tcp:', concat( parameters('sqlservername'),'.database.windows.net'), ',1433;Initial Catalog=', variables('databaseName'), ';User Id=', variables('administratorLogin'), ';Password=', variables('administratorLoginPassword'), ';')]",
+              "type": "SQLAzure"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "[parameters('sqlservername')]",
+      "type": "Microsoft.Sql/servers",
+      "apiVersion": "2014-04-01-preview",
+      "location": "[resourceGroup().location]",
+      "properties":
+      {
+        "administratorLogin": "[variables('administratorLogin')]",
+        "administratorLoginPassword": "[variables('administratorLoginPassword')]",
+        "version": "[variables('version')]"
+      },
+      "resources":
+      [
+        {
+          "name": "AllowAllWindowsAzureIps",
+          "type": "firewallrules",
+          "apiVersion": "2014-04-01-preview",
+          "location": "[resourceGroup().location]",
+          "dependsOn":
+          [
+            "[concat('Microsoft.Sql/servers/', parameters('sqlservername'))]"
+          ],
+          "properties":
+          {
+            "endIpAddress": "0.0.0.0",
+            "startIpAddress": "0.0.0.0"
+          }
+        },
+        {
+          "name": "[variables('databaseName')]",
+          "type": "databases",
+          "apiVersion": "2014-04-01-preview",
+          "location": "[resourceGroup().location]",
+          "dependsOn":
+          [
+            "[concat('Microsoft.Sql/servers/', parameters('sqlservername'))]"
+          ],
+          "properties":
+          {
+            "collation": "[variables('collation')]",
+            "edition": "[variables('edition')]",
+            "maxSizeBytes": "[variables('maxSizeBytes')]",
+            "requestedServiceObjectiveName": "[variables('requestedServiceObjectiveName')]"
+          },
+		  "resources":[  			
+			{
+              "name": "Import",
+              "type": "extensions",
+              "apiVersion": "2014-04-01-preview",
+              "dependsOn":
+              [
+                "[concat('Microsoft.Sql/servers/', parameters('sqlservername'), '/databases/', variables('databaseName'))]"
+              ],
+              "properties":
+              {
+                "storageKeyType": "[variables('storageKeyType')]",
+                "storageKey": "[parameters('artifactsLocationSasToken')]",
+                "storageUri": "[concat(parameters('artifactsLocation'),'/poc/Resources/', variables('deployPackageFileName'))]",
+                "administratorLogin": "[variables('administratorLogin')]",
+                "administratorLoginPassword": "[variables('administratorLoginPassword')]",
+                "operationMode": "Import"
+              }
+			  },
+			{
+				"type": "providers/diagnosticSettings",
+				"name": "Microsoft.Insights/service",
+				"dependsOn":[
+					"[concat('Microsoft.Sql/servers/', parameters('sqlservername'), '/databases/', variables('databaseName'))]",
+					"[concat('Microsoft.OperationalInsights/workspaces/',variables('workspaceName'))]",
+					"[concat('Microsoft.Storage/storageAccounts/',variables('diagStorageAccount'))]"					
+				],
+				"apiVersion": "2015-07-01",
+				"properties":{
+					"storageAccountId":"[resourceId('Microsoft.Storage/storageAccounts',variables('diagStorageAccount'))]",
+					"workspaceId":"[resourceId('Microsoft.OperationalInsights/workspaces',variables('workspaceName'))]",
+					"logs":[
+						{
+							"category":"QueryStoreRuntimeStatistics",
+							"enabled":true,
+							"retentionPolicy":{
+								"days":7,
+								"enabled":false
+							}
+						},
+						{
+							"category":"QueryStoreWaitStatistics",
+							"enabled":true,
+							"retentionPolicy":{
+								"days":7,
+								"enabled":false
+							}
+						},
+						{
+							"category":"Errors",
+							"enabled":true,
+							"retentionPolicy":{
+								"days":7,
+								"enabled":false
+							}
+						},
+						{
+							"category":"DatabaseWaitStatistics",
+							"enabled":true,
+							"retentionPolicy":{
+								"days":7,
+								"enabled":false
+							}
+						},
+						{
+							"category":"Timeouts",
+							"enabled":true,
+							"retentionPolicy":{
+								"days":7,
+								"enabled":false
+							}
+						},
+						{
+							"category":"Blocks",
+							"enabled":true,
+							"retentionPolicy":{
+								"days":7,
+								"enabled":false
+							}
+						},
+						{
+							"category":"SQLInsights",
+							"enabled":true,
+							"retentionPolicy":{
+								"days":7,
+								"enabled":false
+							}
+						},
+						{
+							"category":"Audit",
+							"enabled":true,
+							"retentionPolicy":{
+								"days":7,
+								"enabled":false
+							}
+						}						
+					],
+					"metrics":	[{
+							"category": "AllMetrics",
+							"enabled":true,
+							"retentionPolicy":{
+								"enabled":false,
+								"days":7
+							}					
+					}]	
+				}	
+			}			  
+          ]
+        }		
+      ]
+    }	
+  ]
+}
