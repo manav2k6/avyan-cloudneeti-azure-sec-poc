@@ -1,4 +1,4 @@
-﻿Param
+Param
      (
      [string] [Parameter(Mandatory=$true)] $Command,
      [string] [Parameter(Mandatory=$true)] $DeploymentPrefix
@@ -8,7 +8,6 @@
 $artifactStagingDirectories = @(
     "..\Templates"
     "..\Resources"
-    "..\Tools"
     "..\Scripts"
 )
 $ResourceGroupName= $DeploymentPrefix+'-'+'RG'
@@ -16,10 +15,16 @@ $ResourceGroupLocation = 'Southeast Asia'
 $StorageAccountName = "staccount$(Get-Random)"
 $webappname= $DeploymentPrefix+"webapp$(Get-Random)"
 $sqlservername= $DeploymentPrefix+"sql$(Get-Random)"
+$AppGatewayName= $webappname+'-'+'Gateway'
 $TemplateFile = '..\Templates\scenario2test.json'
 $Username= "testuser"
 $Password= "Welkom@123"
 $storageContainerName = "stageartifacts"
+
+switch($Command)
+{
+   Deploy
+	{
 
 New-AzureRmResourceGroup -Name $ResourceGroupName -Location $ResourceGroupLocation -Verbose -Force -ErrorAction Stop
 
@@ -52,3 +57,17 @@ $parameter.add("sqlservername", $sqlservername)
 # Run deployment by passing updated parameter file.
 New-AzureRmResourceGroupDeployment -ResourceGroupName $ResourceGroupName -TemplateFile $TemplateFile -TemplateParameterObject $parameter -Mode Incremental -DeploymentDebugLogLevel All -Verbose -Force
 Set-AzureRMWebApp -ConnectionStrings @{ MyConnectionString = @{ Type="SQLAzure"; Value ="Server=tcp:$sqlservername.database.windows.net; Database=iisweb; User ID=$Username@$sqlservername;Password=$password;Trusted_Connection=False;Encrypt=True;" } } -Name $Webappname -ResourceGroupName $ResourceGroupName
+}
+
+ Metigate
+     {
+ 
+$AppGw = Get-AzureRmApplicationGateway -Name $AppGatewayName -ResourceGroupName $ResourceGroupName
+$AppGw | Set-AzureRmApplicationGatewayWebApplicationFirewallConfiguration -Enabled $true -FirewallMode Prevention
+Set-AzureRmApplicationGateway -ApplicationGateway $AppGw
+     }
+ClearResources
+     {
+Remove-AzureRmResourceGroup -Name $ResourceGroupName 
+     }
+}
