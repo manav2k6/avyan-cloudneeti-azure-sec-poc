@@ -1,0 +1,517 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+	"DSMvmAuthType": {
+		"type": "string",
+		"defaultValue": "password",
+		"allowedValues": [
+			"password",
+			"sshPublicKey"
+		]
+	},
+        "databaseOption": {
+            "type": "string",
+            "defaultValue": "new",
+            "allowedValues": [
+                "new",
+                "existing"
+            ]
+        },
+    "_artifactsLocation":
+    {
+      "type": "string"
+    }		
+},
+  "variables": {
+	"dsmVMName": "DSManagerVMBYOL",
+	"dsmVMSize":"Standard_A2_V2",
+	"wlVMSize":"Standard_A2_V2",
+	"workloadVMName": "workloadVMWin",
+	"dsmVMUsername":"testuser",
+	"dsmVMPasswd":"P@ssword@123",
+	"wlusername":"wltestuser",
+	"wlPasswd":"Pas$word@123",
+	"dsmPortalUser": "mngadmin",
+	"dsmportalPasswd": "Passmord@123",
+	"vNetName": "DSM-winWorkload-vnet",
+	"dsmSubnet":"DSM-Subnet",
+	"wlSubnet":"wl-Subnet",
+	"dsmvnetaddress": "10.101.0.0/16",
+	"dsmSubnetAddress": "10.101.2.0/24",
+	"wlSubnetAddress":"10.101.3.0/24",
+	"dsmSQLSerName": "dsmsqlserver",
+	"dsmSQLDBName": "dsmDB",	
+	"sqlSerUser":"dsmdbadmin",
+	"sqlSerPasswd":"Password@123",
+	"dsmExtensionName": "installDSM",
+	"dsaExtensionName": "installDSA",
+	"dsmVMIPName":"dsmvmPIP",
+	"wlVMIPName":"wlvmPIP",
+	"vmAdminSshPublicKey": "",
+	"licenseMode": "20",
+	"dsmManagerPort": "443",
+	"dsmheartbeatPort":"4120",
+	"wlWindowsOSVersion":"2012-R2-Datacenter",
+	"dsmsqlser":"[concat(variables('dsmSQLSerName'),uniquestring(resourceGroup().id))]",		
+	"dsmVMDNSName": "[concat('dsmvm',uniquestring(resourceGroup().id))]",
+	"workloadDNSName":"[concat('workloadvm',uniquestring(resourceGroup().id))]",
+	"dsmurl": "[concat('https://',variables('dsmVMDNSName'),'.',resourceGroup().location,'.cloudapp.azure.com:',variables('dsmManagerPort'),'/')]",
+	"hartbeaturl":"[concat('dsm://',variables('dsmVMDNSName'),'.',resourceGroup().location,'.cloudapp.azure.com:',variables('dsmheartbeatPort'),'/')]",	
+	"dsmNicName": "[concat(variables('dsmVMName'),'-nic')]",
+	"workloadNicName": "[concat(variables('workloadVMName'),'-nic')]",
+	"dsmNSGName": "[concat(variables('dsmVMName'),'-nsg')]",
+	"wlNSGName":"[concat(variables('workloadVMName'),'-nsg')]",
+	"dsmStorageAccount":"[concat('trendmicrodsm','straccount')]",
+	"wlStorageAccount":"[concat('workload','straccount')]",
+	"linuxConfigurationChoosen": "[variables(concat('linuxConfiguration', parameters('DSMvmAuthType')))]",
+	"linuxConfigurationpassword": {
+            "disablePasswordAuthentication": "false"
+        },	
+	"linuxConfigurationsshPublicKey": {
+		"disablePasswordAuthentication": "true",
+		"ssh": {
+			"publicKeys": [
+				{
+					"path": "[concat('/home/',variables('dsmVMUsername'),'/.ssh/authorized_keys')]",
+					"keyData": "[variables('vmAdminSshPublicKey')]"
+				}
+			]
+		}
+	}		
+  },
+  "resources": [
+    {
+      "type": "Microsoft.Storage/storageAccounts",
+      "name": "[variables('dsmStorageAccount')]",
+      "apiVersion": "2016-01-01",
+      "location": "[resourceGroup().location]",
+      "sku": {
+        "name": "Standard_LRS"
+      },
+      "kind": "Storage",
+      "properties": {}
+    },
+      {
+      "type": "Microsoft.Storage/storageAccounts",
+      "name": "[variables('wlStorageAccount')]",
+      "apiVersion": "2016-01-01",
+      "location": "[resourceGroup().location]",
+      "sku": {
+        "name": "Standard_LRS"
+      },
+      "kind": "Storage",
+      "properties": {}
+    },
+    {
+      "apiVersion": "2016-03-30",
+      "type": "Microsoft.Network/publicIPAddresses",
+      "name": "[variables('dsmVMIPName')]",
+      "location": "[resourceGroup().location]",
+      "properties": {
+        "publicIPAllocationMethod": "Dynamic",
+        "dnsSettings": {
+          "domainNameLabel": "[variables('dsmVMDNSName')]"
+        }
+      }
+    },
+     {
+      "apiVersion": "2016-03-30",
+      "type": "Microsoft.Network/publicIPAddresses",
+      "name": "[variables('wlVMIPName')]",
+      "location": "[resourceGroup().location]",
+      "properties": {
+        "publicIPAllocationMethod": "Dynamic",
+        "dnsSettings": {
+          "domainNameLabel": "[variables('workloadDNSName')]"
+        }
+      }
+    },
+    {
+      "apiVersion": "2016-03-30",
+      "type": "Microsoft.Network/virtualNetworks",
+      "name": "[variables('vNetName')]",
+      "location": "[resourceGroup().location]",
+      "properties": {
+        "addressSpace": {
+          "addressPrefixes": [
+            "[variables('dsmvnetaddress')]"
+          ]
+        },
+        "subnets": [
+          {
+            "name": "[variables('dsmSubnet')]",
+            "properties": {
+              "addressPrefix": "[variables('dsmSubnetAddress')]"
+            }
+          },
+          {
+            "name": "[variables('wlSubnet')]",
+            "properties": {
+              "addressPrefix": "[variables('wlSubnetAddress')]"
+            }
+          }
+        ]
+      }
+    },
+	{
+		"apiVersion": "2015-06-15",
+		"type": "Microsoft.Network/networkSecurityGroups",
+		"name": "[variables('dsmNSGName')]",
+		"location": "[resourceGroup().location]",
+		"properties": {
+			"securityRules": [
+				{
+					"name": "allow-inbound-ssh",
+					"properties": {
+						"protocol": "Tcp",
+						"sourcePortRange": "*",
+						"destinationPortRange": "22",
+						"sourceAddressPrefix": "*",
+						"destinationAddressPrefix": "*",
+						"access": "Allow",
+						"priority": 1000,
+						"direction": "Inbound"
+					}
+				},
+				{
+					"name": "allow-inbound-dsmportal",
+					"properties": {
+						"protocol": "Tcp",
+						"sourcePortRange": "*",
+						"destinationPortRange": "[variables('dsmManagerPort')]",
+						"sourceAddressPrefix": "*",
+						"destinationAddressPrefix": "*",
+						"access": "Allow",
+						"priority": 1100,
+						"direction": "Inbound"
+					}
+				},
+				{
+					"name": "allow-inbound-dsmagent",
+					"properties": {
+						"protocol": "Tcp",
+						"sourcePortRange": "*",
+						"destinationPortRange": "4118",
+						"sourceAddressPrefix": "*",
+						"destinationAddressPrefix": "*",
+						"access": "Allow",
+						"priority": 1200,
+						"direction": "Inbound"
+					}
+				},
+				{
+					"name": "allow-inbound-dsmheartbeat",
+					"properties": {
+						"protocol": "Tcp",
+						"sourcePortRange": "*",
+						"destinationPortRange": "[variables('dsmheartbeatPort')]",
+						"sourceAddressPrefix": "*",
+						"destinationAddressPrefix": "*",
+						"access": "Allow",
+						"priority": 1300,
+						"direction": "Inbound"
+					}
+				},
+				{
+					"name": "allow-inbound-dsmdownload",
+					"properties": {
+						"protocol": "Tcp",
+						"sourcePortRange": "*",
+						"destinationPortRange": "4122",
+						"sourceAddressPrefix": "*",
+						"destinationAddressPrefix": "*",
+						"access": "Allow",
+						"priority": 1400,
+						"direction": "Inbound"
+					}
+				},
+				{
+					"name": "allow-inbound-dsmwebinstaller",
+					"properties": {
+						"protocol": "Tcp",
+						"sourcePortRange": "*",
+						"destinationPortRange": "8443",
+						"sourceAddressPrefix": "*",
+						"destinationAddressPrefix": "*",
+						"access": "Allow",
+						"priority": 1500,
+						"direction": "Inbound"
+					}
+				}
+			]
+		}
+	},
+    {
+      "apiVersion": "2016-03-30",
+      "type": "Microsoft.Network/networkInterfaces",
+      "name": "[variables('dsmNicName')]",
+      "location": "[resourceGroup().location]",
+      "dependsOn": [
+        "[resourceId('Microsoft.Network/publicIPAddresses/', variables('dsmVMIPName'))]",
+        "[resourceId('Microsoft.Network/virtualNetworks/', variables('vNetName'))]",		
+		"[concat('Microsoft.Network/networkSecurityGroups/', variables('dsmNSGName'))]"
+      ],
+      "properties": {
+        "networkSecurityGroup": {
+            "id": "[resourceId('Microsoft.Network/networkSecurityGroups', variables('dsmNSGName'))]"
+        },	  
+        "ipConfigurations": [
+          {
+            "name": "ipconfig1",
+            "properties": {
+              "privateIPAllocationMethod": "Dynamic",
+              "publicIPAddress": {
+                "id": "[resourceId('Microsoft.Network/publicIPAddresses',variables('dsmVMIPName'))]"
+              },
+              "subnet": {
+                "id": "[resourceId('Microsoft.Network/virtualNetworks/subnets', variables('vNetName'), variables('dsmSubnet'))]"
+              }
+            }
+          }
+        ]
+      }
+    },
+      {
+      "apiVersion": "2016-03-30",
+      "type": "Microsoft.Network/networkInterfaces",
+      "name": "[variables('workloadNicName')]",
+      "location": "[resourceGroup().location]",
+      "dependsOn": [
+        "[resourceId('Microsoft.Network/publicIPAddresses/', variables('wlVMIPName'))]",
+        "[resourceId('Microsoft.Network/virtualNetworks/', variables('vNetName'))]"
+      ],
+      "properties": {
+        "ipConfigurations": [
+          {
+            "name": "ipconfig1",
+            "properties": {
+              "privateIPAllocationMethod": "Dynamic",
+              "publicIPAddress": {
+                "id": "[resourceId('Microsoft.Network/publicIPAddresses',variables('wlVMIPName'))]"
+              },
+              "subnet": {
+                "id": "[resourceId('Microsoft.Network/virtualNetworks/subnets', variables('vNetName'), variables('wlSubnet'))]"
+              }
+            }
+          }
+        ]
+      }
+    },
+	{
+      "name": "[variables('dsmsqlser')]",
+      "type": "Microsoft.Sql/servers",
+      "apiVersion": "2014-04-01-preview",
+      "location": "[resourceGroup().location]",
+      "properties":
+      {
+        "administratorLogin": "[variables('sqlSerUser')]",
+        "administratorLoginPassword": "[variables('sqlSerPasswd')]",
+        "version": "12.0"
+      },
+      "resources":
+      [
+       {
+          "name": "AllowAllWindowsAzureIps",
+          "type": "firewallrules",
+          "apiVersion": "2014-04-01-preview",
+          "location": "[resourceGroup().location]",
+          "dependsOn":
+          [
+            "[concat('Microsoft.Sql/servers/',variables('dsmsqlser'))]"
+          ],
+          "properties":
+          {
+            "endIpAddress": "0.0.0.0",
+            "startIpAddress": "0.0.0.0"
+          }
+        },
+        {
+          "name": "[variables('dsmSQLDBName')]",
+          "type": "databases",
+          "apiVersion": "2014-04-01-preview",
+          "location": "[resourceGroup().location]",
+          "dependsOn":
+          [
+            "[concat('Microsoft.Sql/servers/',variables('dsmsqlser'))]"
+          ],
+          "properties":
+          {
+            "collation": "SQL_Latin1_General_CP1_CI_AS",
+            "edition": "Standard",
+            "maxSizeBytes": "21474836480",
+            "requestedServiceObjectiveName": "S3"
+          }
+        }	  
+	  ]
+    },
+    {
+      "apiVersion": "2017-03-30",
+      "type": "Microsoft.Compute/virtualMachines",
+      "name": "[variables('dsmVMName')]",
+      "location": "[resourceGroup().location]",
+	   "plan": {
+			"name": "dxxnbyol",
+			"product": "deep-security-vm-byol",
+			"publisher": "trendmicro"
+	   },	  
+      "dependsOn": [
+        "[resourceId('Microsoft.Storage/storageAccounts/', variables('dsmStorageAccount'))]",
+        "[resourceId('Microsoft.Network/networkInterfaces/', variables('dsmNicName'))]",
+		"[concat('Microsoft.Sql/servers/',variables('dsmsqlser'))]"
+      ],
+      "properties": {
+        "hardwareProfile": {
+          "vmSize": "[variables('dsmVMSize')]"		  
+        },
+        "osProfile": {
+          "computerName": "[variables('dsmVMName')]",
+          "adminUsername": "[variables('dsmVMUsername')]",
+          "adminPassword": "[variables('dsmVMPasswd')]",
+		  "linuxConfiguration": "[variables('linuxConfigurationChoosen')]"
+        },
+        "storageProfile": {
+          "imageReference": {
+            "publisher": "trendmicro",
+            "offer": "deep-security-vm-byol",
+            "sku": "dxxnbyol",
+            "version": "latest"
+          },
+          "osDisk": {
+            "createOption": "FromImage",
+			"osType": "Linux",
+			"caching": "ReadWrite",
+			"name": "[concat(variables('dsmVMName'),'-osDisk')]",
+			"vhd": {
+                "uri": "[concat('https://',variables('dsmStorageAccount'),'.blob.core.windows.net/','vhds/',variables('dsmVMName'),'-osdisk.vhd')]"
+              }
+          },
+          "dataDisks": []
+        },
+        "networkProfile": {
+          "networkInterfaces": [
+            {
+              "id": "[resourceId('Microsoft.Network/networkInterfaces',variables('dsmNicName'))]"
+            }
+          ]
+        },
+        "diagnosticsProfile": {
+          "bootDiagnostics": {
+            "enabled": true,
+            "storageUri": "[reference(resourceId('Microsoft.Storage/storageAccounts/', variables('dsmStorageAccount'))).primaryEndpoints.blob]"
+          }
+        }
+      }
+    },
+	{
+		"type": "Microsoft.Compute/virtualMachines/extensions",
+		"name": "[concat(variables('dsmVMName'),'/',variables('dsmExtensionName'))]",
+		"apiVersion": "2017-03-30",
+		"location": "[resourceGroup().location]",
+		"scale": null,
+		"properties": {
+			"publisher": "Microsoft.OSTCExtensions",
+			"type": "CustomScriptForLinux",
+			"typeHandlerVersion": "1.5",
+			"autoUpgradeMinorVersion": true,
+			"settings": {"commandToExecute": "cp ../../config/0.settings /opt/trend/packages/dsm/default/"},
+			"protectedSettings": {
+				"subscriptionId": "[subscription().subscriptionId]",
+				"vmName": "[variables('dsmVMName')]",
+				"databaseName": "[variables('dsmSQLDBName')]",
+				"adminUserName": "[variables('dsmPortalUser')]",
+				"adminPassword": "[variables('dsmportalPasswd')]",
+				"databaseUserName": "[variables('sqlSerUser')]",
+				"databaseUserPassword": "[variables('sqlSerPasswd')]",
+				"licenseMode": "[variables('licenseMode')]",
+				"databaseServer": "[reference(concat('Microsoft.Sql/servers/', variables('dsmsqlser'))).fullyQualifiedDomainName]",
+				"location": "[resourceGroup().location]",
+				"managerPort": "[variables('dsmManagerPort')]",
+				"heartbeatPort": "[variables('dsmheartbeatPort')]",
+				"vmFQDN": "[reference(resourceId('Microsoft.Network/publicIPAddresses',variables('dsmVMIPName')),providers('Microsoft.Network', 'publicIPAddresses').apiVersions[0]).dnsSettings.fqdn]",
+				"databaseOption": "[parameters('databaseOption')]",
+				"vmSize": "[variables('dsmVMSize')]",
+				"resourceGroup": "[resourceGroup().name]",
+				"securityGroupName": "[variables('dsmNSGName')]"
+			}
+		},
+		"dependsOn": [
+			"[resourceId('Microsoft.Compute/virtualMachines', variables('dsmVMName'))]"
+		]
+	},
+	{
+      "apiVersion": "2017-03-30",
+      "type": "Microsoft.Compute/virtualMachines",
+      "name": "[variables('workloadVMName')]",
+      "location": "[resourceGroup().location]",
+      "dependsOn": [
+        "[resourceId('Microsoft.Storage/storageAccounts/', variables('wlStorageAccount'))]",
+        "[resourceId('Microsoft.Network/networkInterfaces/', variables('workloadNicName'))]"
+      ],
+      "properties": {
+        "hardwareProfile": {
+          "vmSize": "[variables('wlVMSize')]"
+        },
+        "osProfile": {
+          "computerName": "[variables('workloadVMName')]",
+          "adminUsername": "[variables('wlusername')]",
+          "adminPassword": "[variables('wlPasswd')]"
+        },
+        "storageProfile": {
+          "imageReference": {
+            "publisher": "MicrosoftWindowsServer",
+            "offer": "WindowsServer",
+            "sku": "[variables('wlWindowsOSVersion')]",
+            "version": "latest"
+          },
+          "osDisk": {
+            "createOption": "FromImage"
+          },
+          "dataDisks": [
+            {
+              "diskSizeGB": 1023,
+              "lun": 0,
+              "createOption": "Empty"
+            }
+          ]
+        },
+        "networkProfile": {
+          "networkInterfaces": [
+            {
+              "id": "[resourceId('Microsoft.Network/networkInterfaces',variables('workloadNicName'))]"
+            }
+          ]
+        },
+        "diagnosticsProfile": {
+          "bootDiagnostics": {
+            "enabled": true,
+            "storageUri": "[reference(resourceId('Microsoft.Storage/storageAccounts/', variables('wlStorageAccount'))).primaryEndpoints.blob]"
+          }
+        }
+      }
+    },
+	{
+		"type": "Microsoft.Compute/virtualMachines/extensions",
+		"name": "[concat(variables('workloadVMName'),'/',variables('dsaExtensionName'))]",
+		"apiVersion": "2017-03-30",
+		"location": "[resourceGroup().location]",
+		"scale": null,
+		"properties": {
+			"publisher": "Microsoft.Compute",
+			"type": "CustomScriptExtension",
+			"typeHandlerVersion": "1.5",
+			"autoUpgradeMinorVersion": true,
+			"settings": {
+			"commandToExecute": "[concat('powershell -ExecutionPolicy Unrestricted -file dsa-cs2.ps1 ',variables('dsmurl'), ' ',variables('hartbeaturl'),'/')]",
+			"fileUris": [
+                "[parameters('_artifactsLocation')]"
+				]
+			},
+			"protectedSettings": {}
+			},
+			"dependsOn": [
+                "[resourceId('Microsoft.Compute/virtualMachines', variables('workloadVMName'))]"	,
+				"[resourceId('Microsoft.Compute/virtualMachines/extensions/',variables('dsmVMName'),variables('dsmExtensionName'))]"]
+	}	
+  ]
+}
